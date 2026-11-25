@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Weekly management meeting · Fonthill</title>
+<style>
+  :root {
+    --color-fg: #1f1e1d; --color-fg-muted: #6b6862; --color-bg: #f5f4ef; --color-panel: #ffffff;
+    --color-border-line: #e3e1d9; --color-ok: #2f7d4f; --color-warn: #a86a12; --color-bad: #b4352c;
+    --c1: #2c6fbb; --c2: #d97a2b; --c3: #6b8e23; --c4: #8e5aa8;
+    --cds-chart-grid: #ecebe5; --cds-chart-axis: #b9b6ac; --cds-chart-reference: #8a877e; --cds-chart-status-critical: #c8473d;
+    --cds-surface-popover: #ffffff; --cds-border: #d9d6cc; --cds-shadow-popover: 0 4px 16px rgba(0,0,0,.12); --cds-text-secondary: #6b6862;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-fg: #ecebe7; --color-fg-muted: #a8a59c; --color-bg: #1c1b19; --color-panel: #262523;
+      --color-border-line: #3a3936; --color-ok: #5fbf85; --color-warn: #e0a345; --color-bad: #ef7a6f;
+      --c1: #6aa5e8; --c2: #f0a061; --c3: #9cc25a; --c4: #b98fd0;
+      --cds-chart-grid: #32312e; --cds-chart-axis: #55534e; --cds-chart-reference: #8f8c83; --cds-chart-status-critical: #ef7a6f;
+      --cds-surface-popover: #2e2d2a; --cds-border: #45433f; --cds-shadow-popover: 0 4px 16px rgba(0,0,0,.5); --cds-text-secondary: #a8a59c;
+    }
+  }
+  :root {
+    --font-anthropic-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-anthropic-serif: Georgia, "Times New Roman", serif;
+    --cds-font-size-caption: 12.5px; --cds-font-size-body: 15px; --cds-font-size-heading: 19px; --cds-font-size-title: 30px;
+    --cds-font-weight-medium: 600;
+    --cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 14px; --cds-gap-lg: 20px; --cds-gap-xl: 32px;
+    --cds-pad-xs: 4px; --cds-pad-sm: 8px; --cds-pad-md: 12px; --cds-pad-lg: 18px; --cds-pad-xl: 24px;
+    --cds-radius: 10px; --cds-dur-slow: .3s;
+  }
+  html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); font-family: var(--font-anthropic-sans); font-size: var(--cds-font-size-body); line-height: 1.45; }
+  #dash-root { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; box-sizing: border-box; }
+  #dash-root *, #dash-root *::before, #dash-root *::after { box-sizing: border-box; }
+  .dash-skeleton { position: relative; color: transparent !important; }
+  .dash-skeleton::after { content: ""; position: absolute; inset: 20% 0; max-width: 8em; border-radius: 4px; background: var(--color-border-line); }
+  .ff-foot { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--color-border-line); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+  .ff-foot button { font: inherit; color: var(--color-fg); background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: 6px; padding: 3px 10px; cursor: pointer; }
+  .ff-foot button:hover { border-color: var(--color-fg-muted); }
+</style>
+<script>/*D3*/</script>
+<script>
+window.__DATA__ = /*DATA*/;
+window.__META__ = /*META*/;
+window.dash = (() => {
+  const RAW = window.__DATA__, calcs = {}, cache = {}, subs = [];
+  let params = {};
+  try { const h = decodeURIComponent(location.hash.slice(1)); if (h.startsWith('{')) params = JSON.parse(h); } catch (e) {}
+  const compute = (id) => {
+    if (id in cache) return cache[id];
+    if (RAW[id] !== undefined) return (cache[id] = RAW[id]);
+    const c = calcs[id];
+    if (!c) return undefined;
+    return (cache[id] = c.fn(...c.inputs.map((i) => compute(i) ?? [])));
+  };
+  const run = () => subs.forEach((fn) => { try { fn(); } catch (e) { console.error(e); } });
+  let t; window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(run, 150); });
+  return {
+    calc(id, def) { calcs[id] = def; },
+    loader() {},
+    data(id) {
+      try {
+        const d = compute(id);
+        if (d === undefined) return { status: 'missing', data: [] };
+        const out = { status: 'ok', data: d, refreshing: false, truncated: false, meta: null };
+        if (Array.isArray(d) && d[0]) out.columns = Object.keys(d[0]);
+        return out;
+      } catch (e) { console.error(e); return { status: 'error', data: [], message: String(e) }; }
+    },
+    onData(fn) { subs.push(fn); try { fn(); } catch (e) { console.error(e); } },
+    params() { return { ...params }; },
+    setParams(p) {
+      for (const [k, v] of Object.entries(p)) { if (v == null) delete params[k]; else params[k] = v; }
+      history.replaceState(null, '', Object.keys(params).length ? '#' + encodeURIComponent(JSON.stringify(params)) : location.pathname);
+      run();
+    },
+    resetParams() { params = {}; run(); },
+    colors: ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)'],
+    refresh() {}, setLink() {}, draw() {},
+  };
+})();
+</script>
+</head>
+<body>
+<div id="dash-root">
+/*PAGE*/
+<footer class="ff-foot">
+  <span>Data updated <b id="ff-updated"></b>. Sales from Square, wages from Workforce.com, GP from Xero. Refreshed every Monday afternoon.</span>
+  <span id="ff-dl">Download data:</span>
+</footer>
+</div>
+<script>
+(() => {
+  const m = window.__META__;
+  document.getElementById('ff-updated').textContent = new Date(m.updated).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/London' });
+  const names = { sales_weekly: 'Weekly sales', sales_daily: 'Daily sales', wages_weekly: 'Weekly wages', wages_daily: 'Daily wages', gp_monthly: 'Monthly GP', wastage: 'Wastage' };
+  const box = document.getElementById('ff-dl');
+  for (const [id, label] of Object.entries(names)) {
+    const rows = window.__DATA__[id];
+    if (!Array.isArray(rows) || !rows.length) continue;
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = label;
+    b.addEventListener('click', () => {
+      const cols = Object.keys(rows[0]);
+      const esc = (v) => { const s = v == null ? '' : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+      const csv = [cols.join(','), ...rows.map((r) => cols.map((c) => esc(r[c])).join(','))].join('\n');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+      a.download = id + '.csv';
+      document.body.append(a); a.click(); a.remove();
+    });
+    box.append(' ', b);
+  }
+})();
+</script>
+</body>
+</html>
